@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>저축 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@300;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f12;
+  --surface: #17171c;
+  --surface2: #1e1e26;
+  --border: #2a2a38;
+  --accent: #c8f060;
+  --accent2: #60c8f0;
+  --accent3: #f060a8;
+  --text: #f0f0f4;
+  --text2: #8888a0;
+  --text3: #555568;
+  --green: #4ade80;
+  --red: #f87171;
+  --amber: #fbbf24;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* layout */
+.layout { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 24px;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.main { padding: 32px 36px; overflow-y: auto; }
+
+/* header */
+.logo {
+  font-family: 'Gmarket Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* section labels */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 24px;
+}
+.section-label:first-of-type { margin-top: 0; }
+
+/* goal box */
+.goal-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 8px;
+}
+.goal-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.goal-row:last-child { margin-bottom: 0; }
+.goal-row label { font-size: 12px; color: var(--text2); min-width: 70px; }
+.goal-row input, .goal-row select {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.goal-row input:focus, .goal-row select:focus { border-color: var(--accent); }
+.goal-row select option { background: var(--surface); }
+
+/* add-item form */
+.add-form {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.add-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.add-form input, .add-form select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.add-form input:focus, .add-form select:focus { border-color: var(--accent); }
+.add-form input::placeholder { color: var(--text3); }
+.add-form .type-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.type-tab {
+  flex: 1; padding: 5px 0; font-size: 11px; font-weight: 500;
+  border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); cursor: pointer;
+  transition: all 0.15s; font-family: 'Noto Sans KR', sans-serif;
+}
+.type-tab.active-inc { background: rgba(200,240,96,0.12); border-color: var(--accent); color: var(--accent); }
+.type-tab.active-exp { background: rgba(248,113,113,0.12); border-color: var(--red); color: var(--red); }
+.add-btn {
+  width: 100%; padding: 8px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer; border: none; transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+.add-btn-inc { background: var(--accent); color: #0f0f12; }
+.add-btn-inc:hover { background: #d4f470; }
+.add-btn-exp { background: var(--red); color: #fff; }
+.add-btn-exp:hover { background: #f98989; }
+
+/* item list */
+.item-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.item-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  animation: slideIn 0.2s ease;
+}
+@keyframes slideIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: none; } }
+.item-chip-left { display: flex; flex-direction: column; gap: 2px; }
+.item-chip-name { font-size: 13px; font-weight: 500; }
+.item-chip-meta { font-size: 11px; color: var(--text3); }
+.item-chip-right { display: flex; align-items: center; gap: 8px; }
+.item-chip-amount { font-size: 13px; font-weight: 700; }
+.amount-inc { color: var(--accent); }
+.amount-exp { color: var(--red); }
+.del-btn {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text3); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; line-height: 1;
+}
+.del-btn:hover { border-color: var(--red); color: var(--red); background: rgba(248,113,113,0.1); }
+.empty-hint { font-size: 12px; color: var(--text3); padding: 6px 0; }
+
+/* ===== MAIN PANEL ===== */
+.main-header { margin-bottom: 32px; }
+.main-title {
+  font-family: 'Gmarket Sans', sans-serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--text); line-height: 1.2; margin-bottom: 6px;
+}
+.main-title span { color: var(--accent); }
+.main-sub { font-size: 13px; color: var(--text2); }
+
+/* status card */
+.status-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.status-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.status-card.danger::before { background: linear-gradient(90deg, var(--red), var(--accent3)); }
+.status-card.warn::before { background: linear-gradient(90deg, var(--amber), #f0a060); }
+
+.status-main { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.status-left { }
+.status-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 4px; }
+.status-amount {
+  font-family: 'Gmarket Sans', sans-serif;
+  font-size: 42px; font-weight: 700; line-height: 1;
+  color: var(--accent);
+}
+.status-amount.danger { color: var(--red); }
+.status-amount.warn { color: var(--amber); }
+.status-badge {
+  padding: 6px 14px; border-radius: 100px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+}
+.badge-ok { background: rgba(200,240,96,0.15); color: var(--accent); border: 1px solid rgba(200,240,96,0.3); }
+.badge-warn { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+.badge-danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+
+/* progress bar */
+.progress-track {
+  height: 8px; background: var(--surface2);
+  border-radius: 100px; margin-bottom: 10px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.progress-fill.danger { background: linear-gradient(90deg, var(--red), var(--accent3)); }
+.progress-fill.warn { background: linear-gradient(90deg, var(--amber), #f0a060); }
+.progress-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); }
+
+/* metrics grid */
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.metric {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.metric-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; font-weight: 500; }
+.metric-value { font-family: 'Gmarket Sans', sans-serif; font-size: 22px; font-weight: 700; line-height: 1; }
+.metric-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+/* scenario section */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title-main { font-family: 'Gmarket Sans', sans-serif; font-size: 16px; font-weight: 700; }
+.section-title-main span { color: var(--accent2); }
+
+/* scenario grid */
+.scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.scenario-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; cursor: pointer;
+  transition: all 0.2s; position: relative;
+}
+.scenario-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+.scenario-card.active-scenario { border-color: var(--accent); background: rgba(200,240,96,0.05); }
+.scenario-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.scenario-desc { font-size: 11px; color: var(--text2); margin-bottom: 12px; line-height: 1.5; }
+.scenario-result { font-family: 'Gmarket Sans', sans-serif; font-size: 18px; font-weight: 700; }
+.scenario-result-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.scenario-dot {
+  position: absolute; top: 12px; right: 12px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.scenario-card.active-scenario .scenario-dot { background: var(--accent); }
+
+/* monthly need */
+.monthly-need-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px;
+}
+.mnb-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.mnb-title { font-size: 13px; color: var(--text2); }
+.mnb-val { font-family: 'Gmarket Sans', sans-serif; font-size: 26px; font-weight: 700; }
+.slider-wrap { }
+.slider-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--surface2); border-radius: 100px; outline: none;
+  accent-color: var(--accent);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+  border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--accent);
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+/* timeline */
+.timeline { display: flex; gap: 0; margin-bottom: 20px; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--border); }
+.timeline-month {
+  flex: 1; padding: 10px 4px; text-align: center;
+  background: var(--surface); border-right: 1px solid var(--border);
+  transition: background 0.3s;
+  position: relative;
+}
+.timeline-month:last-child { border-right: none; }
+.timeline-month.passed { background: rgba(200,240,96,0.08); }
+.timeline-month.target { background: rgba(200,240,96,0.2); }
+.timeline-month.insufficient { background: rgba(248,113,113,0.08); }
+.tm-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.tm-amount { font-size: 10px; font-weight: 700; color: var(--text2); }
+.tm-amount.pos { color: var(--accent); }
+.tm-amount.neg { color: var(--red); }
+.tm-bar { width: 4px; height: 24px; border-radius: 2px; background: var(--border); margin: 4px auto 0; }
+.tm-bar.fill { background: var(--accent); }
+.tm-bar.fill-warn { background: var(--amber); }
+.tm-bar.fill-neg { background: var(--red); }
+
+/* expense sliders */
+.exp-sliders { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.exp-slider-row {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.esr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.esr-name { font-size: 13px; font-weight: 500; }
+.esr-values { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.esr-original { color: var(--text3); text-decoration: line-through; }
+.esr-current { color: var(--amber); font-weight: 700; font-family: 'Gmarket Sans', sans-serif; }
+.esr-saved { font-size: 11px; color: var(--green); }
+.savings-impact {
+  background: var(--surface); border: 1px solid rgba(200,240,96,0.2);
+  border-radius: var(--radius); padding: 14px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.si-label { font-size: 12px; color: var(--text2); }
+.si-val { font-family: 'Gmarket Sans', sans-serif; font-size: 20px; font-weight: 700; color: var(--accent); }
+
+/* footer hint */
+.footer-hint { font-size: 11px; color: var(--text3); text-align: center; margin-top: 32px; padding-bottom: 20px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .metrics { grid-template-columns: 1fr 1fr; }
+  .scenarios { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo"><span class="logo-dot"></span>SAVESIM</div>
+
+  <div class="section-label">목표 설정</div>
+  <div class="goal-box">
+    <div class="goal-row">
+      <label>목표 금액</label>
+      <input type="number" id="goalAmt" value="1000" min="1" onchange="render()" /> <span style="font-size:12px;color:var(--text2);margin-left:4px">만원</span>
+    </div>
+    <div class="goal-row">
+      <label>마감 월</label>
+      <select id="goalMonth" onchange="render()">
+        <option value="7">2025년 7월</option>
+        <option value="8">2025년 8월</option>
+        <option value="9">2025년 9월</option>
+        <option value="10">2025년 10월</option>
+        <option value="11">2025년 11월</option>
+        <option value="12" selected>2025년 12월</option>
+      </select>
+    </div>
+    <div class="goal-row">
+      <label>현재 저축액</label>
+      <input type="number" id="initSavings" value="0" min="0" onchange="render()" /> <span style="font-size:12px;color:var(--text2);margin-left:4px">만원</span>
+    </div>
+  </div>
+
+  <div class="section-label">수입 추가</div>
+  <div class="add-form" id="incForm">
+    <div class="type-tabs">
+      <button class="type-tab active-inc" onclick="setIncType('fixed',this)">고정 수입</button>
+      <button class="type-tab" onclick="setIncType('variable',this)">변칙 수입</button>
+    </div>
+    <input type="text" id="incName" placeholder="항목명 (예: 월급)" style="width:100%;margin-bottom:8px" />
+    <div class="row2">
+      <input type="number" id="incAmt" placeholder="금액 (만원)" min="0" />
+      <select id="incMonth">
+        <option value="all">매월</option>
+        <option value="6">6월</option><option value="7">7월</option><option value="8">8월</option>
+        <option value="9">9월</option><option value="10">10월</option>
+        <option value="11">11월</option><option value="12">12월</option>
+      </select>
+    </div>
+    <button class="add-btn add-btn-inc" onclick="addItem('income')">+ 수입 추가</button>
+  </div>
+  <div class="item-list" id="incomeList"></div>
+
+  <div class="section-label">지출 추가</div>
+  <div class="add-form" id="expForm">
+    <div class="type-tabs">
+      <button class="type-tab active-exp" onclick="setExpType('fixed',this)" style="background:rgba(248,113,113,0.12);border-color:var(--red);color:var(--red)">고정 지출</button>
+      <button class="type-tab" onclick="setExpType('variable',this)">변칙 지출</button>
+    </div>
+    <input type="text" id="expName" placeholder="항목명 (예: 월세)" style="width:100%;margin-bottom:8px" />
+    <div class="row2">
+      <input type="number" id="expAmt" placeholder="금액 (만원)" min="0" />
+      <select id="expMonth">
+        <option value="all">매월</option>
+        <option value="6">6월</option><option value="7">7월</option><option value="8">8월</option>
+        <option value="9">9월</option><option value="10">10월</option>
+        <option value="11">11월</option><option value="12">12월</option>
+      </select>
+    </div>
+    <button class="add-btn add-btn-exp" onclick="addItem('expense')">+ 지출 추가</button>
+  </div>
+  <div class="item-list" id="expenseList"></div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="main-header">
+    <div class="main-title">얼마나 모을 수 있을까요? <span>↗</span></div>
+    <div class="main-sub">수입과 지출을 입력하면 목표 달성 여부를 실시간으로 계산해드려요.</div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-card" id="statusCard">
+    <div class="status-main">
+      <div class="status-left">
+        <div class="status-label">12월까지 예상 저축액</div>
+        <div class="status-amount" id="statusAmount">0만원</div>
+      </div>
+      <div class="status-badge badge-warn" id="statusBadge">항목을 추가하세요</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-info">
+      <span id="progressLeft">목표까지 <b>1,000만원</b> 남음</span>
+      <span id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">월 평균 순저축</div>
+      <div class="metric-value" id="metricMonthly" style="color:var(--accent)">0만원</div>
+      <div class="metric-sub" id="metricMonthlySub">수입에서 지출을 뺀 금액</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">목표 달성까지 필요한 월 저축</div>
+      <div class="metric-value" id="metricNeed" style="color:var(--accent2)">—</div>
+      <div class="metric-sub" id="metricNeedSub">남은 개월 기준</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">목표 달성 예상 시점</div>
+      <div class="metric-value" id="metricWhen" style="color:var(--amber)">—</div>
+      <div class="metric-sub" id="metricWhenSub">현재 속도 기준</div>
+    </div>
+  </div>
+
+  <!-- Monthly Timeline -->
+  <div class="section-header">
+    <div class="section-title-main">월별 <span>현금 흐름</span></div>
+  </div>
+  <div class="timeline" id="timeline"></div>
+  <div style="display:flex;gap:16px;margin-bottom:20px;margin-top:8px">
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(200,240,96,0.2)"></div> 달성 가능한 달</div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3)"><div style="width:10px;height:10px;border-radius:2px;background:rgba(248,113,113,0.08)"></div> 저축 부족한 달</div>
+  </div>
+
+  <!-- Scenario -->
+  <div class="section-header">
+    <div class="section-title-main">절약 <span>시나리오</span></div>
+  </div>
+  <div class="scenarios" id="scenarios">
+    <div class="scenario-card" onclick="applyScenario(0)" id="sc0">
+      <div class="scenario-dot"></div>
+      <div class="scenario-name">현재 그대로</div>
+      <div class="scenario-desc">지금 입력한 수입/지출 패턴을 유지할 경우</div>
+      <div class="scenario-result" id="sc0-result" style="color:var(--text2)">—</div>
+      <div class="scenario-result-sub" id="sc0-sub"></div>
+    </div>
+    <div class="scenario-card" onclick="applyScenario(1)" id="sc1">
+      <div class="scenario-dot"></div>
+      <div class="scenario-name">지출 10% 절감</div>
+      <div class="scenario-desc">고정/변칙 지출을 모두 10% 줄일 경우</div>
+      <div class="scenario-result" id="sc1-result" style="color:var(--text2)">—</div>
+      <div class="scenario-result-sub" id="sc1-sub"></div>
+    </div>
+    <div class="scenario-card" onclick="applyScenario(2)" id="sc2">
+      <div class="scenario-dot"></div>
+      <div class="scenario-name">지출 20% 절감</div>
+      <div class="scenario-desc">고정/변칙 지출을 모두 20% 줄일 경우</div>
+      <div class="scenario-result" id="sc2-result" style="color:var(--text2)">—</div>
+      <div class="scenario-result-sub" id="sc2-sub"></div>
+    </div>
+    <div class="scenario-card" onclick="applyScenario(3)" id="sc3">
+      <div class="scenario-dot"></div>
+      <div class="scenario-name">목표 역산</div>
+      <div class="scenario-desc">목표 달성을 위해 매달 얼마씩 아껴야 하는지</div>
+      <div class="scenario-result" id="sc3-result" style="color:var(--accent2)">—</div>
+      <div class="scenario-result-sub" id="sc3-sub"></div>
+    </div>
+  </div>
+
+  <!-- Expense Sliders -->
+  <div class="section-header">
+    <div class="section-title-main">항목별 <span>절약 시뮬레이터</span></div>
+  </div>
+  <div class="exp-sliders" id="expSliders">
+    <div style="font-size:12px;color:var(--text3)">지출 항목을 추가하면 슬라이더로 조절할 수 있어요.</div>
+  </div>
+  <div class="savings-impact" id="savingsImpact" style="display:none">
+    <div>
+      <div class="si-label">슬라이더 절약 효과</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">원래 지출 대비 감소액</div>
+    </div>
+    <div class="si-val" id="sliderSavings">0만원</div>
+  </div>
+
+  <div class="footer-hint">항목을 수정하면 모든 계산이 실시간으로 업데이트됩니다.</div>
+</main>
+</div>
+
+<script>
+const NOW_MONTH = 6; // June 2025
+let incomes = [];
+let expenses = [];
+let nextId = 1;
+let incType = 'fixed';
+let expType = 'fixed';
+let sliderValues = {};
+let activeScenario = 0;
+
+function setIncType(t, el) {
+  incType = t;
+  document.querySelectorAll('#incForm .type-tab').forEach(b => b.classList.remove('active-inc'));
+  el.classList.add('active-inc');
+}
+function setExpType(t, el) {
+  expType = t;
+  document.querySelectorAll('#expForm .type-tab').forEach(b => b.classList.remove('active-exp'));
+  el.classList.add('active-exp');
+}
+
+function addItem(kind) {
+  if (kind === 'income') {
+    const name = document.getElementById('incName').value.trim();
+    const amt = parseFloat(document.getElementById('incAmt').value);
+    const month = document.getElementById('incMonth').value;
+    if (!name || !amt || amt <= 0) return alert('항목명과 금액을 입력해주세요.');
+    incomes.push({ id: nextId++, name, amount: amt, type: incType, month });
+    document.getElementById('incName').value = '';
+    document.getElementById('incAmt').value = '';
+  } else {
+    const name = document.getElementById('expName').value.trim();
+    const amt = parseFloat(document.getElementById('expAmt').value);
+    const month = document.getElementById('expMonth').value;
+    if (!name || !amt || amt <= 0) return alert('항목명과 금액을 입력해주세요.');
+    expenses.push({ id: nextId++, name, amount: amt, type: expType, month });
+    sliderValues[nextId - 1] = amt;
+    document.getElementById('expName').value = '';
+    document.getElementById('expAmt').value = '';
+  }
+  render();
+}
+
+function removeItem(kind, id) {
+  if (kind === 'income') incomes = incomes.filter(i => i.id !== id);
+  else { expenses = expenses.filter(e => e.id !== id); delete sliderValues[id]; }
+  render();
+}
+
+function fmt(v, short) {
+  const n = Math.round(v);
+  if (short && Math.abs(n) >= 1000) return (n/1000).toFixed(1) + '천만';
+  return n.toLocaleString() + '만원';
+}
+
+function getMonthNet(m, expMultiplier = 1, sliderOverride = false) {
+  let inc = 0, exp = 0;
+  incomes.forEach(i => { if (i.month === 'all' || parseInt(i.month) === m) inc += i.amount; });
+  expenses.forEach(e => {
+    if (e.month === 'all' || parseInt(e.month) === m) {
+      const base = sliderOverride ? (sliderValues[e.id] ?? e.amount) : e.amount;
+      exp += base * expMultiplier;
+    }
+  });
+  return inc - exp;
+}
+
+function calcTotal(expMultiplier = 1, sliderOverride = false) {
+  const goal = parseFloat(document.getElementById('goalMonth').value);
+  const init = parseFloat(document.getElementById('initSavings').value) || 0;
+  let total = init;
+  for (let m = NOW_MONTH; m <= 12; m++) {
+    total += getMonthNet(m, expMultiplier, sliderOverride);
+  }
+  return total;
+}
+
+function applyScenario(idx) {
+  activeScenario = idx;
+  document.querySelectorAll('.scenario-card').forEach((c, i) => {
+    c.classList.toggle('active-scenario', i === idx);
+  });
+}
+
+function render() {
+  const goalAmt = parseFloat(document.getElementById('goalAmt').value) || 1000;
+  const deadlineMonth = parseInt(document.getElementById('goalMonth').value);
+  const init = parseFloat(document.getElementById('initSavings').value) || 0;
+  const monthsLeft = deadlineMonth - NOW_MONTH + 1;
+
+  // Update deadline month options label
+  document.getElementById('statusCard').querySelector('.status-label').textContent =
+    deadlineMonth + '월까지 예상 저축액';
+
+  // Render lists
+  const il = document.getElementById('incomeList');
+  il.innerHTML = incomes.length === 0 ? '<div class="empty-hint">수입 항목이 없습니다.</div>' :
+    incomes.map(i => `
+      <div class="item-chip">
+        <div class="item-chip-left">
+          <span class="item-chip-name">${i.name}</span>
+          <span class="item-chip-meta">${i.type === 'fixed' ? '고정' : '변칙'} · ${i.month === 'all' ? '매월' : i.month + '월'}</span>
+        </div>
+        <div class="item-chip-right">
+          <span class="item-chip-amount amount-inc">+${fmt(i.amount)}</span>
+          <button class="del-btn" onclick="removeItem('income',${i.id})">×</button>
+        </div>
+      </div>`).join('');
+
+  const el = document.getElementById('expenseList');
+  el.innerHTML = expenses.length === 0 ? '<div class="empty-hint">지출 항목이 없습니다.</div>' :
+    expenses.map(e => `
+      <div class="item-chip">
+        <div class="item-chip-left">
+          <span class="item-chip-name">${e.name}</span>
+          <span class="item-chip-meta">${e.type === 'fixed' ? '고정' : '변칙'} · ${e.month === 'all' ? '매월' : e.month + '월'}</span>
+        </div>
+        <div class="item-chip-right">
+          <span class="item-chip-amount amount-exp">-${fmt(e.amount)}</span>
+          <button class="del-btn" onclick="removeItem('expense',${e.id})">×</button>
+        </div>
+      </div>`).join('');
+
+  // Status
+  const total = calcTotal(1, false);
+  const pct = Math.min(100, Math.max(0, Math.round(total / goalAmt * 100)));
+  const remaining = Math.max(0, goalAmt - total);
+  const sc = document.getElementById('statusCard');
+  const sa = document.getElementById('statusAmount');
+  const pf = document.getElementById('progressFill');
+  const sb = document.getElementById('statusBadge');
+
+  sa.textContent = fmt(total);
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressLeft').innerHTML = total >= goalAmt
+    ? `<b style="color:var(--accent)">목표 달성!</b> ${fmt(total - goalAmt)} 초과`
+    : `목표까지 <b>${fmt(remaining)}</b> 남음`;
+  pf.style.width = pct + '%';
+
+  if (total >= goalAmt) {
+    sa.className = 'status-amount'; sc.className = 'status-card';
+    pf.className = 'progress-fill'; sb.className = 'status-badge badge-ok';
+    sb.textContent = '목표 달성 가능 ✓';
+  } else if (pct >= 70) {
+    sa.className = 'status-amount warn'; sc.className = 'status-card warn';
+    pf.className = 'progress-fill warn'; sb.className = 'status-badge badge-warn';
+    sb.textContent = '조금 더 노력하면 가능';
+  } else {
+    sa.className = 'status-amount danger'; sc.className = 'status-card danger';
+    pf.className = 'progress-fill danger'; sb.className = 'status-badge badge-danger';
+    sb.textContent = '절약이 필요해요';
+  }
+
+  // Metrics
+  let totalNet = 0;
+  for (let m = NOW_MONTH; m <= 12; m++) totalNet += getMonthNet(m);
+  const avgMonthly = monthsLeft > 0 ? totalNet / monthsLeft : 0;
+  const needPerMonth = monthsLeft > 0 ? (goalAmt - init) / monthsLeft : 0;
+
+  document.getElementById('metricMonthly').textContent = (avgMonthly >= 0 ? '+' : '') + fmt(avgMonthly);
+  document.getElementById('metricMonthly').style.color = avgMonthly >= 0 ? 'var(--accent)' : 'var(--red)';
+  document.getElementById('metricMonthlySub').textContent = '매달 평균 ' + (avgMonthly >= needPerMonth ? '충분해요' : '부족해요');
+
+  document.getElementById('metricNeed').textContent = fmt(needPerMonth);
+  document.getElementById('metricNeedSub').textContent = `${NOW_MONTH}월~${deadlineMonth}월 기준 (${monthsLeft}개월)`;
+
+  // When will goal be reached?
+  let cumul = init, achieveMonth = null;
+  for (let m = NOW_MONTH; m <= 12; m++) {
+    cumul += getMonthNet(m);
+    if (cumul >= goalAmt && !achieveMonth) achieveMonth = m;
+  }
+  if (achieveMonth) {
+    document.getElementById('metricWhen').textContent = achieveMonth + '월';
+    document.getElementById('metricWhen').style.color = achieveMonth <= deadlineMonth ? 'var(--accent)' : 'var(--amber)';
+    document.getElementById('metricWhenSub').textContent = achieveMonth <= deadlineMonth ? '기한 내 달성 가능' : '기한 초과 예상';
+  } else {
+    document.getElementById('metricWhen').textContent = '달성 불가';
+    document.getElementById('metricWhen').style.color = 'var(--red)';
+    document.getElementById('metricWhenSub').textContent = '지금 속도로는 어려워요';
+  }
+
+  // Timeline
+  const maxAbsNet = Math.max(...Array.from({length: 7}, (_, i) => Math.abs(getMonthNet(NOW_MONTH + i))), 1);
+  let cumTimeline = init;
+  let tlHtml = '';
+  for (let m = NOW_MONTH; m <= 12; m++) {
+    const net = getMonthNet(m);
+    cumTimeline += net;
+    const barH = Math.round(Math.abs(net) / maxAbsNet * 24);
+    const barCls = net < 0 ? 'fill-neg' : cumTimeline >= goalAmt ? 'fill' : 'fill-warn';
+    const mCls = cumTimeline >= goalAmt ? 'target' : net < 0 ? 'insufficient' : m < NOW_MONTH ? 'passed' : '';
+    tlHtml += `<div class="timeline-month ${mCls}">
+      <div class="tm-label">${m}월</div>
+      <div class="tm-bar ${barCls}" style="height:${Math.max(4, barH)}px"></div>
+      <div class="tm-amount ${net >= 0 ? 'pos' : 'neg'}">${net >= 0 ? '+' : ''}${Math.round(net)}만</div>
+    </div>`;
+  }
+  document.getElementById('timeline').innerHTML = tlHtml;
+
+  // Scenarios
+  const sc0 = calcTotal(1, false);
+  const sc1 = calcTotal(0.9, false);
+  const sc2 = calcTotal(0.8, false);
+  const sc3_need = goalAmt - calcTotal(1, false);
+
+  function scResult(el, sub, val, goal) {
+    el.textContent = fmt(val);
+    el.style.color = val >= goal ? 'var(--accent)' : val >= goal * 0.7 ? 'var(--amber)' : 'var(--red)';
+    sub.textContent = val >= goal ? '목표 달성 ✓' : `${fmt(goal - val)} 부족`;
+  }
+  scResult(document.getElementById('sc0-result'), document.getElementById('sc0-sub'), sc0, goalAmt);
+  scResult(document.getElementById('sc1-result'), document.getElementById('sc1-sub'), sc1, goalAmt);
+  scResult(document.getElementById('sc2-result'), document.getElementById('sc2-sub'), sc2, goalAmt);
+
+  const sc3El = document.getElementById('sc3-result');
+  const sc3Sub = document.getElementById('sc3-sub');
+  if (sc3_need > 0) {
+    const monthlyNeed = sc3_need / monthsLeft;
+    sc3El.textContent = '월 ' + fmt(monthlyNeed) + ' 절약';
+    sc3El.style.color = 'var(--accent2)';
+    sc3Sub.textContent = `매달 ${fmt(monthlyNeed)}씩 추가 절약 필요`;
+  } else {
+    sc3El.textContent = '이미 달성 가능';
+    sc3El.style.color = 'var(--accent)';
+    sc3Sub.textContent = '추가 절약 불필요';
+  }
+
+  // Expense sliders
+  const sliderContainer = document.getElementById('expSliders');
+  const fixedExps = expenses.filter(e => e.month === 'all');
+  if (fixedExps.length === 0) {
+    sliderContainer.innerHTML = '<div style="font-size:12px;color:var(--text3)">지출 항목을 추가하면 슬라이더로 조절할 수 있어요.</div>';
+    document.getElementById('savingsImpact').style.display = 'none';
+  } else {
+    document.getElementById('savingsImpact').style.display = 'flex';
+    sliderContainer.innerHTML = fixedExps.map(e => {
+      const cur = sliderValues[e.id] ?? e.amount;
+      const saved = e.amount - cur;
+      return `<div class="exp-slider-row">
+        <div class="esr-header">
+          <span class="esr-name">${e.name}</span>
+          <div class="esr-values">
+            ${saved > 0.1 ? `<span class="esr-original">${fmt(e.amount)}</span>` : ''}
+            <span class="esr-current">${fmt(cur)}</span>
+            ${saved > 0.1 ? `<span class="esr-saved">-${fmt(saved)} 절약</span>` : ''}
+          </div>
+        </div>
+        <input type="range" min="0" max="${e.amount}" step="1" value="${cur}"
+          oninput="updateSlider(${e.id}, parseFloat(this.value))" />
+        <div class="slider-label"><span>0만원</span><span>${fmt(e.amount)}</span></div>
+      </div>`;
+    }).join('');
+
+    let totalSaved = 0;
+    fixedExps.forEach(e => { totalSaved += e.amount - (sliderValues[e.id] ?? e.amount); });
+    const sliderTotal = calcTotal(1, true);
+    document.getElementById('sliderSavings').textContent = '+' + fmt(totalSaved) + ' 절약 → ' + fmt(sliderTotal) + ' 예상';
+  }
+}
+
+function updateSlider(id, val) {
+  sliderValues[id] = val;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
